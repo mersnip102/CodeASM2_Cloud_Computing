@@ -1,0 +1,12 @@
+.product_bestseller {
+    margin: 40px;
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(87, 198, 250);
+    
+}
+
+.product:hover{
+    text-decoration: underline;
+    color: darkblue;
+}

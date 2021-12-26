@@ -1,0 +1,287 @@
+const express = require('express')
+const app = express()
+// const bodyParser = require('body-parser');
+// const fs = require("fs");
+// const multer = require('multer');
+
+const { MongoClient, ObjectId } = require('mongodb')
+
+const DATABASE_URL = 'mongodb+srv://quyennxgch190732:quyen692001@cluster0.zmilp.mongodb.net/test';
+const DATABASE_NAME = 'CodeASM'
+
+const { getDatabase, deleteProduct, getAllDocumentsFromCollection } = require('./databaseHandler')
+
+const path = require('path');
+const hbs = require('hbs');
+const async = require('hbs/lib/async');
+const { redirect } = require('express/lib/response');
+const req = require('express/lib/request');
+const { stringify } = require('querystring');
+
+const partialsPath = path.join(__dirname, "/views/partials");
+hbs.registerPartials(partialsPath);
+
+app.set('view engine', 'hbs')
+app.use(express.static('public'))
+app.use(express.urlencoded({ extended: true }))
+// app.use(bodyParser.urlencoded({
+//     extended: true
+// }))
+
+app.get('/', async (req, res) => {
+
+    const collectionName = 'Products'
+    const products = await getAllDocumentsFromCollection(collectionName)
+    res.render('index', { products: products })
+
+})
+
+app.get('/product', async (req, res) => {
+
+    const collectionName = 'Products'
+    const dbo = await getDatabase();
+    const products = await getAllDocumentsFromCollection(collectionName);
+    await changeIdToCategoryName(products, dbo);
+
+    res.render('product', { products: products })
+})
+
+app.get('/category', async (req, res) => {
+
+    const collectionName = 'Category'
+    
+    const categories = await getAllDocumentsFromCollection(collectionName);
+
+    res.render('category', { categories: categories })
+})
+
+app.get('/delete', async (req, res) => {
+    const id = req.query.id
+
+    const collectionName = 'Products'
+    await deleteProduct(collectionName, id)
+    console.log("id to delete is:" + id)
+    res.redirect("/product")
+})
+
+app.get('/deleteCategory', async (req, res) => {
+    const id = req.query.id
+
+    const collectionName = 'Category'
+    await deleteProduct(collectionName, id)
+    console.log("id of Category to delete is:" + id)
+    res.redirect("/category")
+})
+
+// var storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, 'public/uploads')
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, file.fieldname + '-' + Date.now()  + '.jpg')
+//     }
+// })
+
+// var upload = multer({ storage: storage })
+
+app.post('/insertP', async (req, res) => {
+
+    const productName = req.body.txtName
+    const productCategory = req.body.category
+    const productPrice = req.body.txtPrice
+    const productDescription = req.body.txtDescription
+    const productImg = req.body.txtImage
+
+    const collectionName = 'Category'
+    const categories = await getAllDocumentsFromCollection(collectionName)
+
+    if (productName === "" || productCategory === "" || productPrice === "" || productImg === "") {
+        const errorMessage = "Value cannot be empty! Please try again!"
+        const oldValues = {
+            name: productName, category: productCategory, price: productPrice,
+            description: productDescription, image: productImg
+        }
+        res.render('insertP', { error: errorMessage, oldValues: oldValues, categories: categories })
+        return;
+    }
+
+    if (isNaN(productPrice) == true) {
+
+        const errorMessage = "Price must be number!"
+        const oldValues = {
+            name: productName, category: productCategory, price: productPrice,
+            description: productDescription, image: productImg
+        }
+        res.render('insertP', { error2: errorMessage, oldValues: oldValues, categories: categories })
+        return;
+    }
+
+    if(!productImg.startsWith("https://") && !productImg.startsWith("http://") ){
+        const errorMessage = "URL image must start with: https://"
+        const oldValues = {
+            name: productName, category: productCategory, price: productPrice,
+            description: productDescription, image: productImg
+        }
+        res.render('insertP', { error3: errorMessage, oldValues: oldValues, categories: categories })
+        return;
+    }
+
+    const newP = {
+        name: productName, category: productCategory, price: Number.parseFloat(productPrice),
+        description: productDescription, image: productImg
+    }
+    const dbo = await getDatabase();
+    const result = await dbo.collection('Products').insertOne(newP)
+
+    const confirmInsert = "Insert product successfully "
+    console.log("The newly inserted id value is: ", result.insertedId.toHexString());
+
+    res.render('insertP', { confirmInsert: confirmInsert, categories: categories })
+
+})
+
+app.post('/insertCategory', async (req, res) => {
+
+    const categoryName = req.body.txtName
+    const categoryImg = req.body.txtImage
+
+    if (categoryName === "" || categoryImg === "") {
+        const errorMessage = "Value cannot be empty! Please try again!"
+        const oldValues = {
+            name: categoryName, image: categoryImg
+        }
+        res.render('insertCat', { error: errorMessage, oldValues: oldValues })
+        return;
+    }
+
+    if(!categoryImg.startsWith("https://") &&  !categoryImg.startsWith("http://")){
+        const errorMessage = "URL image must start with: https:// OR http://"
+        const oldValues = {
+            name: categoryName, image: categoryImg
+        }
+        res.render('insertCat', { error3: errorMessage, oldValues: oldValues })
+        return;
+    }
+
+    const newCat = {
+        name: categoryName, image: categoryImg
+    }
+    const dbo = await getDatabase();
+    const result = await dbo.collection('Category').insertOne(newCat)
+
+    const confirmInsert = "Insert product successfully "
+    console.log("The newly inserted id value is: ", result.insertedId.toHexString());
+
+    res.render('insertCat', { confirmInsert: confirmInsert})
+
+})
+
+app.post('/search', async (req, res) => {
+
+    const searchInput = req.body.txtSearch;
+    const searchPrice = Number.parseFloat(searchInput);
+
+
+    const collectionName = 'Products'
+    const dbo = await getDatabase();
+    // const result = await dbo.collection(collectionName).find({$or:[{_id:ObjectId(searchInput)},{name: searchInput}, {category: }]});
+
+    const products = await dbo.collection(collectionName).find(
+        {
+            $or: [
+                { _id: { $regex: searchInput, $options: "$i" }},
+                { name: { $regex: searchInput, $options: "$i" } },
+                { price: { $regex: searchInput, $options: "$i" } },
+                { price:  searchPrice},
+                
+            ]
+        }
+
+    ).toArray();
+    await changeIdToCategoryName(products, dbo);
+    res.render('search', { products: products })
+
+})
+
+app.get('/search', async (req, res) => {
+
+    res.render('search')
+})
+
+app.get('/insertP', async (req, res) => {
+
+    const collectionName = 'Category'
+    const categories = await getAllDocumentsFromCollection(collectionName)
+    res.render('insertP', { categories: categories })
+
+})
+
+app.get('/insertCategory', async (req, res) => {
+
+    
+    res.render('insertCat')
+
+})
+
+app.post('/edit', async (req, res) => {
+    const id = req.body.txtId;
+    
+    const productName = req.body.txtName
+    const productCategory = req.body.category
+    const productPrice = req.body.txtPrice
+    const productDescription = req.body.txtDescription
+    const productImg = req.body.txtImage
+
+    const collectionName = 'Category'
+    const categories = await getAllDocumentsFromCollection(collectionName)
+
+    const myquery = { _id: ObjectId(id) }
+
+    const newvalues  = { $set:{ name: productName, category: productCategory, price: Number.parseFloat(productPrice),
+        description: productDescription, image: productImg}
+       
+    }
+    const dbo = await getDatabase();
+    await dbo.collection('Products').updateOne(myquery, newvalues)
+
+    console.log("Update product successfully ");
+
+    res.redirect('/product')
+
+})
+
+app.get('/edit', async(req,res)=>{
+    const id = req.query.id
+
+    const collectionName = "Products";
+    const productToEdit = await getDocumentById(collectionName, id);
+    
+    const dbo = await getDatabase();
+    const categories = await dbo.collection('Category').find({}).toArray()
+    res.render('edit',{product:productToEdit, categories:categories})
+    
+})
+
+
+const PORT = process.env.PORT || 5000
+app.listen(PORT)
+console.log('Server is running!')
+
+
+
+async function getDocumentById(collectionName, id) {
+    
+    const dbo = await getDatabase();
+    const productToEdit = await dbo.collection(collectionName).findOne({ _id: ObjectId(id) });
+    return productToEdit;
+}
+
+async function changeIdToCategoryName(products, dbo) {
+    const count = products.length;
+
+    for (let i = 0; i < count; i++) {
+        const category = await dbo.collection('Category').findOne({ _id: ObjectId(products[i].category) });
+        products[i].category = category.name;
+    }
+}
+
