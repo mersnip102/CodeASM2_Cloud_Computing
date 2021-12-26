@@ -20,4 +20,24 @@ async function getAllDocumentsFromCollection(collectionName) {
     return products;
 }
 
-module.exports = {getDatabase,deleteProduct, getAllDocumentsFromCollection}
+async function getDocumentById(collectionName, id) {
+    
+    const dbo = await getDatabase();
+    const productToEdit = await dbo.collection(collectionName).findOne({ _id: ObjectId(id) });
+    return productToEdit;
+}
+
+async function insertObjectToCollection(collectionName, newP) {
+    const dbo = await getDatabase();
+    const result = await dbo.collection(collectionName).insertOne(newP);
+    console.log("The newly product inserted id value is: ", result.insertedId.toHexString());
+}
+
+async function updateCollection(id, collectionName, newvalues) {
+    const myquery = { _id: ObjectId(id) };
+    const dbo = await getDatabase();
+    await dbo.collection(collectionName).updateOne(myquery, newvalues);
+}
+
+module.exports = {getDatabase,deleteProduct, getAllDocumentsFromCollection,
+    getDocumentById, insertObjectToCollection, updateCollection}

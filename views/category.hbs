@@ -39,7 +39,7 @@
         </div>
         <br><br>
         <center>
-            <form class="d-flex" style="width: 50%;" action="/search" method="post">
+            <form class="d-flex" style="width: 50%;" action="/searchCat" method="post">
                 <input class="form-control me-2" name = "txtSearch" type="search" placeholder="Search Category ..." aria-label="Search">
                 <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -67,7 +67,7 @@
                         <td class="items">{{name}}</td>
                         <td class="items"> <img src="{{image}}" width="180px" height="200px"></td>
                         <td>
-                            <a href="/edit?id={{_id}}" class="btn btn-info btn-sm">
+                            <a href="/editCategory?id={{_id}}" class="btn btn-info btn-sm">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
                             <a onclick="return confirm('Do you want to delete the category?')" href="/deleteCategory?id={{_id}}"

@@ -9,7 +9,8 @@ const { MongoClient, ObjectId } = require('mongodb')
 const DATABASE_URL = 'mongodb+srv://quyennxgch190732:quyen692001@cluster0.zmilp.mongodb.net/test';
 const DATABASE_NAME = 'CodeASM'
 
-const { getDatabase, deleteProduct, getAllDocumentsFromCollection } = require('./databaseHandler')
+const { getDatabase, deleteProduct, getAllDocumentsFromCollection,
+    getDocumentById, insertObjectToCollection, updateCollection} = require('./databaseHandler')
 
 const path = require('path');
 const hbs = require('hbs');
@@ -49,7 +50,7 @@ app.get('/product', async (req, res) => {
 app.get('/category', async (req, res) => {
 
     const collectionName = 'Category'
-    
+
     const categories = await getAllDocumentsFromCollection(collectionName);
 
     res.render('category', { categories: categories })
@@ -60,7 +61,7 @@ app.get('/delete', async (req, res) => {
 
     const collectionName = 'Products'
     await deleteProduct(collectionName, id)
-    console.log("id to delete is:" + id)
+    console.log("Id of Product to delete is:" + id)
     res.redirect("/product")
 })
 
@@ -69,7 +70,7 @@ app.get('/deleteCategory', async (req, res) => {
 
     const collectionName = 'Category'
     await deleteProduct(collectionName, id)
-    console.log("id of Category to delete is:" + id)
+    console.log("Id  of Category to delete is:" + id)
     res.redirect("/category")
 })
 
@@ -92,8 +93,8 @@ app.post('/insertP', async (req, res) => {
     const productDescription = req.body.txtDescription
     const productImg = req.body.txtImage
 
-    const collectionName = 'Category'
-    const categories = await getAllDocumentsFromCollection(collectionName)
+    const collectionName = 'Products'
+    const categories = await getAllDocumentsFromCollection('Category')
 
     if (productName === "" || productCategory === "" || productPrice === "" || productImg === "") {
         const errorMessage = "Value cannot be empty! Please try again!"
@@ -116,7 +117,7 @@ app.post('/insertP', async (req, res) => {
         return;
     }
 
-    if(!productImg.startsWith("https://") && !productImg.startsWith("http://") ){
+    if (!productImg.startsWith("https://") && !productImg.startsWith("http://")) {
         const errorMessage = "URL image must start with: https://"
         const oldValues = {
             name: productName, category: productCategory, price: productPrice,
@@ -125,17 +126,18 @@ app.post('/insertP', async (req, res) => {
         res.render('insertP', { error3: errorMessage, oldValues: oldValues, categories: categories })
         return;
     }
+    var confirmInsert = "Insert product successfully "
+    try {
+        
+        const newP = {
+            name: productName, category: productCategory, price: Number.parseFloat(productPrice),
+            description: productDescription, image: productImg
+        }
+        await insertObjectToCollection(collectionName, newP);
+    } catch (error) {
 
-    const newP = {
-        name: productName, category: productCategory, price: Number.parseFloat(productPrice),
-        description: productDescription, image: productImg
+        confirmInsert = "Product Insert failed";
     }
-    const dbo = await getDatabase();
-    const result = await dbo.collection('Products').insertOne(newP)
-
-    const confirmInsert = "Insert product successfully "
-    console.log("The newly inserted id value is: ", result.insertedId.toHexString());
-
     res.render('insertP', { confirmInsert: confirmInsert, categories: categories })
 
 })
@@ -154,7 +156,7 @@ app.post('/insertCategory', async (req, res) => {
         return;
     }
 
-    if(!categoryImg.startsWith("https://") &&  !categoryImg.startsWith("http://")){
+    if (!categoryImg.startsWith("https://") && !categoryImg.startsWith("http://")) {
         const errorMessage = "URL image must start with: https:// OR http://"
         const oldValues = {
             name: categoryName, image: categoryImg
@@ -162,17 +164,31 @@ app.post('/insertCategory', async (req, res) => {
         res.render('insertCat', { error3: errorMessage, oldValues: oldValues })
         return;
     }
-
-    const newCat = {
-        name: categoryName, image: categoryImg
-    }
     const dbo = await getDatabase();
-    const result = await dbo.collection('Category').insertOne(newCat)
+    const collectionName = 'Category'
+    const query = await dbo.collection(collectionName).findOne({ name: categoryName })
 
-    const confirmInsert = "Insert product successfully "
-    console.log("The newly inserted id value is: ", result.insertedId.toHexString());
+    if (query != null) {
+        const errorMessage = "Duplicate category name"
+        const oldValues = {
+            name: categoryName, image: categoryImg
+        }
+        res.render('insertCat', { duplicate: errorMessage, oldValues: oldValues })
+        return;
+    }
+    var confirmInsert = "Insert category successfully"
+    try {
+        const newCat = {
+            name: categoryName, image: categoryImg
+        }
+        const result = await dbo.collection(collectionName).insertOne(newCat)
+        console.log("The newly category inserted id value is: ", result.insertedId.toHexString());
+    } catch (error) {
 
-    res.render('insertCat', { confirmInsert: confirmInsert})
+        confirmInsert = "Category Insert failed";
+    }
+
+    res.render('insertCat', { confirmInsert: confirmInsert })
 
 })
 
@@ -189,11 +205,11 @@ app.post('/search', async (req, res) => {
     const products = await dbo.collection(collectionName).find(
         {
             $or: [
-                { _id: { $regex: searchInput, $options: "$i" }},
+                { _id: { $regex: searchInput, $options: "$i" } },
                 { name: { $regex: searchInput, $options: "$i" } },
                 { price: { $regex: searchInput, $options: "$i" } },
-                { price:  searchPrice},
-                
+                { price: searchPrice },
+
             ]
         }
 
@@ -208,6 +224,33 @@ app.get('/search', async (req, res) => {
     res.render('search')
 })
 
+app.post('/searchCat', async (req, res) => {
+
+    const searchInput = req.body.txtSearch;
+
+    const collectionName = 'Category'
+    const dbo = await getDatabase();
+    // const result = await dbo.collection(collectionName).find({$or:[{_id:ObjectId(searchInput)},{name: searchInput}, {category: }]});
+    console.log(searchInput);
+    const categories = await dbo.collection(collectionName).find(
+        {
+            $or: [
+
+                { name: { $regex: searchInput, $options: "$i" } },
+            ]
+        }
+
+    ).toArray();
+
+    res.render('searchCat', { categories: categories })
+
+})
+
+app.get('/searchCat', async (req, res) => {
+
+    res.render('searchCat')
+})
+
 app.get('/insertP', async (req, res) => {
 
     const collectionName = 'Category'
@@ -218,31 +261,33 @@ app.get('/insertP', async (req, res) => {
 
 app.get('/insertCategory', async (req, res) => {
 
-    
+
     res.render('insertCat')
 
 })
 
 app.post('/edit', async (req, res) => {
     const id = req.body.txtId;
-    
+
     const productName = req.body.txtName
     const productCategory = req.body.category
     const productPrice = req.body.txtPrice
     const productDescription = req.body.txtDescription
     const productImg = req.body.txtImage
 
-    const collectionName = 'Category'
-    const categories = await getAllDocumentsFromCollection(collectionName)
+    const collectionName = 'Products'
+    const categories = await getAllDocumentsFromCollection('Category')
 
-    const myquery = { _id: ObjectId(id) }
+    
 
-    const newvalues  = { $set:{ name: productName, category: productCategory, price: Number.parseFloat(productPrice),
-        description: productDescription, image: productImg}
-       
+    const newvalues = {
+        $set: {
+            name: productName, category: productCategory, price: Number.parseFloat(productPrice),
+            description: productDescription, image: productImg
+        }
+
     }
-    const dbo = await getDatabase();
-    await dbo.collection('Products').updateOne(myquery, newvalues)
+    await updateCollection(id, collectionName, newvalues);
 
     console.log("Update product successfully ");
 
@@ -250,31 +295,53 @@ app.post('/edit', async (req, res) => {
 
 })
 
-app.get('/edit', async(req,res)=>{
+app.get('/edit', async (req, res) => {
     const id = req.query.id
 
     const collectionName = "Products";
     const productToEdit = await getDocumentById(collectionName, id);
-    
+
     const dbo = await getDatabase();
     const categories = await dbo.collection('Category').find({}).toArray()
-    res.render('edit',{product:productToEdit, categories:categories})
-    
+    res.render('edit', { product: productToEdit, categories: categories })
+
 })
 
+app.post('/editCat', async (req, res) => {
+    const id = req.body.txtId;
+
+    const productName = req.body.txtName
+    const productImg = req.body.txtImage
+
+    const myquery = { _id: ObjectId(id) }
+
+    const newvalues = {
+        $set: { name: productName, image: productImg }
+
+    }
+    const dbo = await getDatabase();
+    await dbo.collection('Category').updateOne(myquery, newvalues)
+
+    console.log("Update category successfully ");
+
+    res.redirect('/category')
+
+})
+
+app.get('/editCategory', async (req, res) => {
+    const id = req.query.id
+
+    const collectionName = "Category";
+    const categoryToEdit = await getDocumentById(collectionName, id);
+
+    res.render('editCat', { category: categoryToEdit })
+
+})
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT)
 console.log('Server is running!')
 
-
-
-async function getDocumentById(collectionName, id) {
-    
-    const dbo = await getDatabase();
-    const productToEdit = await dbo.collection(collectionName).findOne({ _id: ObjectId(id) });
-    return productToEdit;
-}
 
 async function changeIdToCategoryName(products, dbo) {
     const count = products.length;

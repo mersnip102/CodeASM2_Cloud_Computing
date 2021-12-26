@@ -1,12 +1,13 @@
-.product_bestseller {
+.product {
     margin: 40px;
     font-size: 20px;
     font-weight: bold;
-    color: rgb(87, 198, 250);
+   
     
 }
 
-.product:hover{
+.Display_product:hover{
+    color: red;
     text-decoration: underline;
-    color: darkblue;
+    
 }

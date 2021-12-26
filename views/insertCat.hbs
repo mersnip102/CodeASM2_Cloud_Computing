@@ -39,6 +39,7 @@
                     <legend style="color: red; text-align:center; font-size:30px;">Add Category</legend>
                     <label for="name">Input Category's Name: </label>
                     <input type="text" name="txtName" id="txtName" value="{{oldValues.name}}">
+                    <span style="color: red;">{{duplicate}}</span>
                     <br><br>
                     <label for="img">Input URL Image:</label>
                     <div style="display: inline;">
@@ -57,7 +58,6 @@
                 </fieldset>
 
             </form>
-            <br>
             <center>
                 <h4 style="color: red;">{{confirmInsert}}</h4>
             </center>
