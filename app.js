@@ -9,8 +9,8 @@ const { MongoClient, ObjectId } = require('mongodb')
 const DATABASE_URL = 'mongodb+srv://quyennxgch190732:quyen692001@cluster0.zmilp.mongodb.net/test';
 const DATABASE_NAME = 'CodeASM'
 
-const { getDatabase, deleteProduct, getAllDocumentsFromCollection,
-    getDocumentById, insertObjectToCollection, updateCollection} = require('./databaseHandler')
+// const { getDatabase, deleteProduct, getAllDocumentsFromCollection,
+//     getDocumentById, insertObjectToCollection, updateCollection} = require('./databaseHandler')
 
 const path = require('path');
 const hbs = require('hbs');
@@ -29,13 +29,13 @@ app.use(express.urlencoded({ extended: true }))
 //     extended: true
 // }))
 
-// app.get('/', async (req, res) => {
+app.get('/', async (req, res) => {
 
-//     const collectionName = 'Products'
-//     const products = await getAllDocumentsFromCollection(collectionName)
-//     res.render('index', { products: products })
+    const collectionName = 'Products'
+    const products = await getAllDocumentsFromCollection(collectionName)
+    res.render('index', { products: products })
 
-// })
+})
 
 app.get('/product', async (req, res) => {
 
