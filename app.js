@@ -219,6 +219,33 @@ app.post('/search', async (req, res) => {
 
 })
 
+app.post('/searchProductIndex', async (req, res) => {
+
+    const searchInput = req.body.txtSearch;
+    const searchPrice = Number.parseFloat(searchInput);
+
+
+    const collectionName = 'Products'
+    const dbo = await getDatabase();
+    // const result = await dbo.collection(collectionName).find({$or:[{_id:ObjectId(searchInput)},{name: searchInput}, {category: }]});
+
+    const products = await dbo.collection(collectionName).find(
+        {
+            $or: [
+                { _id: { $regex: searchInput, $options: "$i" } },
+                { name: { $regex: searchInput, $options: "$i" } },
+                { price: { $regex: searchInput, $options: "$i" } },
+                { price: searchPrice },
+
+            ]
+        }
+
+    ).toArray();
+    // await changeIdToCategoryName(products, dbo);
+    res.render('index', { products: products })
+
+})
+
 app.get('/search', async (req, res) => {
 
     res.render('search')
