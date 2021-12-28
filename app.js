@@ -29,13 +29,13 @@ app.use(express.urlencoded({ extended: true }))
 //     extended: true
 // }))
 
-app.get('/', async (req, res) => {
+// app.get('/', async (req, res) => {
 
-    const collectionName = 'Products'
-    const products = await getAllDocumentsFromCollection(collectionName)
-    res.render('index', { products: products })
+//     const collectionName = 'Products'
+//     const products = await getAllDocumentsFromCollection(collectionName)
+//     res.render('index', { products: products })
 
-})
+// })
 
 app.get('/product', async (req, res) => {
 
