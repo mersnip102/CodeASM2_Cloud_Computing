@@ -4,20 +4,14 @@ const app = express()
 // const fs = require("fs");
 // const multer = require('multer');
 
-const { MongoClient, ObjectId } = require('mongodb')
+const { ObjectId } = require('mongodb')
 
-const DATABASE_URL = 'mongodb+srv://quyennxgch190732:quyen692001@cluster0.zmilp.mongodb.net/test';
-const DATABASE_NAME = 'CodeASM'
 
-// const { getDatabase, deleteProduct, getAllDocumentsFromCollection,
-//     getDocumentById, insertObjectToCollection, updateCollection} = require('./databaseHandler')
+const {getDatabase, deleteProduct, getAllDocumentsFromCollection,
+    getDocumentById, insertObjectToCollection, updateCollection} = require('./databaseHandler')
 
 const path = require('path');
 const hbs = require('hbs');
-const async = require('hbs/lib/async');
-const { redirect } = require('express/lib/response');
-const req = require('express/lib/request');
-const { stringify } = require('querystring');
 
 const partialsPath = path.join(__dirname, "/views/partials");
 hbs.registerPartials(partialsPath);
@@ -60,9 +54,22 @@ app.get('/delete', async (req, res) => {
     const id = req.query.id
 
     const collectionName = 'Products'
-    await deleteProduct(collectionName, id)
-    console.log("Id of Product to delete is:" + id)
-    res.redirect("/product")
+
+    const db = await getDatabase()
+    const result = await db.collection(collectionName).findOne({ _id: ObjectId(id) })
+    console.log(result);
+    console.log(result.price);
+    var err2 = "Product cannot be deleted when price is greater than 10"
+    if (result.price >= 10) {
+        res.redirect("/product", {err2: err2})
+    } else {
+        await deleteProduct(collectionName, id)
+        console.log("Id of Product to delete is:" + id)
+        res.redirect("/product")
+    }
+
+
+
 })
 
 app.get('/deleteCategory', async (req, res) => {
@@ -303,7 +310,6 @@ app.post('/edit', async (req, res) => {
     const productImg = req.body.txtImage
 
     const collectionName = 'Products'
-    const categories = await getAllDocumentsFromCollection('Category')
 
 
 
