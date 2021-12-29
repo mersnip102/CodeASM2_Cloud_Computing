@@ -57,7 +57,7 @@ app.get('/delete', async (req, res) => {
     const result = await db.collection(collectionName).findOne({ _id: ObjectId(id) })
 
     const products = await getAllDocumentsFromCollection(collectionName);
-    await changeIdToCategoryName(products, dbo);
+    await changeIdToCategoryName(products, db);
 
     console.log(result.price);
     var err2 = "Product cannot be deleted when price is greater than 10"
