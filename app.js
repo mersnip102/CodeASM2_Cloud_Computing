@@ -128,7 +128,7 @@ app.post('/insertP', async (req, res) => {
     }
     var confirmInsert = "Insert product successfully "
     try {
-        
+
         const newP = {
             name: productName, category: productCategory, price: Number.parseFloat(productPrice),
             description: productDescription, image: productImg
@@ -305,7 +305,7 @@ app.post('/edit', async (req, res) => {
     const collectionName = 'Products'
     const categories = await getAllDocumentsFromCollection('Category')
 
-    
+
 
     const newvalues = {
         $set: {
