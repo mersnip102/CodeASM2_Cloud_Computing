@@ -57,18 +57,16 @@ app.get('/delete', async (req, res) => {
 
     const db = await getDatabase()
     const result = await db.collection(collectionName).findOne({ _id: ObjectId(id) })
-    console.log(result);
     console.log(result.price);
     var err2 = "Product cannot be deleted when price is greater than 10"
     if (result.price >= 10) {
+        console.log(result.price);
         res.redirect("/product", {err2: err2})
     } else {
         await deleteProduct(collectionName, id)
         console.log("Id of Product to delete is:" + id)
         res.redirect("/product")
     }
-
-
 
 })
 
