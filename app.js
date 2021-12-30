@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }))
 //     extended: true
 // }))
 
-app.get('/', async (req, res) => {
+app.get('/', async (_req, res) => {
 
     const collectionName = 'Products'
     const products = await getAllDocumentsFromCollection(collectionName)
@@ -31,7 +31,7 @@ app.get('/', async (req, res) => {
 
 })
 
-app.get('/product', async (req, res) => {
+app.get('/product', async (_req, res) => {
 
     const collectionName = 'Products'
     const dbo = await getDatabase();
@@ -41,7 +41,7 @@ app.get('/product', async (req, res) => {
     res.render('product', { products: products })
 })
 
-app.get('/category', async (req, res) => {
+app.get('/category', async (_req, res) => {
 
     const collectionName = 'Category'
 
@@ -254,7 +254,7 @@ app.post('/searchProductIndex', async (req, res) => {
 
 })
 
-app.get('/search', async (req, res) => {
+app.get('/search', async (_req, res) => {
 
     res.render('search')
 })
@@ -281,12 +281,12 @@ app.post('/searchCat', async (req, res) => {
 
 })
 
-app.get('/searchCat', async (req, res) => {
+app.get('/searchCat', async (_req, res) => {
 
     res.render('searchCat')
 })
 
-app.get('/insertP', async (req, res) => {
+app.get('/insertP', async (_req, res) => {
 
     const collectionName = 'Category'
     const categories = await getAllDocumentsFromCollection(collectionName)
@@ -294,7 +294,7 @@ app.get('/insertP', async (req, res) => {
 
 })
 
-app.get('/insertCategory', async (req, res) => {
+app.get('/insertCategory', async (_req, res) => {
 
 
     res.render('insertCat')
